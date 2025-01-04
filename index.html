@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scene Analyzer</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      text-align: center;
+      background-color: #f4f4f9;
+    }
+    h1 {
+      margin: 20px 0;
+    }
+    input, button {
+      margin: 10px 0;
+      padding: 10px;
+      font-size: 16px;
+    }
+    #results {
+      margin-top: 20px;
+      text-align: left;
+      display: inline-block;
+    }
+    ul {
+      text-align: left;
+    }
+  </style>
+</head>
+<body>
+  <h1>Scene Analyzer</h1>
+  <input type="file" id="imageInput" accept="image/*">
+  <br>
+  <button id="uploadButton">Analyze Scene</button>
+  <p id="errorMessage" style="color: red;"></p>
+  <div id="results" style="display: none;">
+    <h2>Scene Description</h2>
+    <p><strong>Objects Detected:</strong> <span id="objects"></span></p>
+    <p><strong>Categories Present:</strong> <span id="categories"></span></p>
+    <h3>Relationships:</h3>
+    <ul id="relationships"></ul>
+  </div>
+
+  <script>
+    document.getElementById('uploadButton').addEventListener('click', async () => {
+      const imageInput = document.getElementById('imageInput');
+      const errorMessage = document.getElementById('errorMessage');
+      const resultsDiv = document.getElementById('results');
+      const objectsSpan = document.getElementById('objects');
+      const categoriesSpan = document.getElementById('categories');
+      const relationshipsList = document.getElementById('relationships');
+
+      // Clear previous results and error messages
+      errorMessage.textContent = '';
+      resultsDiv.style.display = 'none';
+      objectsSpan.textContent = '';
+      categoriesSpan.textContent = '';
+      relationshipsList.innerHTML = '';
+
+      if (!imageInput.files.length) {
+        errorMessage.textContent = 'Please upload an image!';
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('image', imageInput.files[0]);
+
+      try {
+        const response = await fetch('http://127.0.0.1:5000/analyze', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'An error occurred while processing the image.');
+        }
+
+        const result = await response.json();
+
+        // Display results
+        objectsSpan.textContent = result.objects.join(', ');
+        categoriesSpan.textContent = result.categories.join(', ');
+        result.relationships.forEach(rel => {
+          const listItem = document.createElement('li');
+          listItem.textContent = rel;
+          relationshipsList.appendChild(listItem);
+        });
+        resultsDiv.style.display = 'block';
+      } catch (error) {
+        errorMessage.textContent = error.message;
+      }
+    });
+  </script>
+</body>
+</html>
